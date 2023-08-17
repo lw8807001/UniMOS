@@ -5,8 +5,6 @@ Created on Wed Nov 22 14:10:33 2017
 
 @author: yanrpi
 """
-
-# %%
 import os
 import glob
 import numpy as np
@@ -17,7 +15,6 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from os import path
-# from scipy.misc import imsave
 from scipy import ndimage
 import skimage
 import cv2
@@ -41,13 +38,11 @@ class PartialDataset(Dataset):
         return self.num_images
 
     def __getitem__(self, idx): #获取数据
-        t1 = time.time()
         img_name = self.filenames[idx] #数据名列表
-        #print(img_name.split('/')[-1:], flush = True)
         #根据图像数据路径，替换其中部分字符来得到标签路径
 
         if 'LiTS' in img_name:
-            if 'unlabeled' in img_name: #未标注数据，数据自身路径作为标签路径，后续不使用
+            if 'unlabeled' in img_name: #未标注数据
                 seg_name = img_name
             elif 'validation' in img_name: #验证集
                 seg_name = img_name.replace('validation', 'label')
@@ -57,115 +52,37 @@ class PartialDataset(Dataset):
                 seg_name = seg_name.replace('volume', 'segmentation')    
                 
         elif 'KiTS' in img_name:
-            if 'unlabeled' in img_name: #未标注数据，数据自身路径作为标签路径，后续不使用
-                #seg_name = img_name  
-
-                seg_name = img_name.replace('new_unlabeled', 'label_2') #real
-                #seg_name = img_name.replace('unlabeled', 'label')
-                seg_name = seg_name.replace('scan', 'label')
-                
+            if 'unlabeled' in img_name: #未标注数据
+                seg_name = img_name
             elif 'validation' in img_name: #验证集
-                seg_name = img_name.replace('new_validation', 'label_2') #real
-                #seg_name = img_name.replace('validation', 'label')
+                seg_name = img_name.replace('new_validation', 'label_2') 
                 seg_name = seg_name.replace('scan', 'label')
             else: #标注数据
-                seg_name = img_name.replace('new_labeled', 'label_2') #real
-                #seg_name = img_name.replace('labeled', 'label')
+                seg_name = img_name.replace('new_labeled', 'label_2') 
                 seg_name = seg_name.replace('scan', 'label')    
                 
         elif 'Spleen' in img_name:
-            if 'unlabeled' in img_name: #未标注数据，数据自身路径作为标签路径，后续不使用
-                #seg_name = img_name
-                seg_name = img_name.replace('unlabeled', 'label_3')
-                
-                
+            if 'unlabeled' in img_name: #未标注数据
+                seg_name = img_name
             elif 'validation' in img_name: #验证集
                 seg_name = img_name.replace('validation', 'label_3')
-                #seg_name = img_name.replace('validation', 'label')
             else: #标注数据
                 seg_name = img_name.replace('labeled', 'label_3')
-                #seg_name = img_name.replace('labeled', 'label')
                 
         image = nib.load(img_name).get_data() #读入图像数据
         segmentation = nib.load(seg_name).get_data() #读入标注数据
         
-        #print('image.shape = {} seg.shape = {}'.format(image.shape, segmentation.shape))
-        #都是 256 * 256 * xxx
-        t2 = time.time()
         if 'unlabeled' in img_name: #未标记数据，同时生成强增强数据s1和s2
-            '''
-            image_s1 = image
-            image_s2 = image
-            '''
             sample = {'image': image, 'label': segmentation}
-
-            '''
-            sample2 = {'image': image_s1, 'label': segmentation}
-            sample3 = {'image': image_s2, 'label': segmentation}
-            '''
-            
             
             if self.transform: #图像转换
                 sample = self.transform(sample)
-                '''
-                sample2 = self.transform(sample2)
-                sample3 = self.transform(sample3)
-                '''
-                #RandomCrop((hw, hw, slices),view) → Clip(-200, 200) → Normalize(-200, 200) → RandomHorizontalFlip() → RandomVerticalFlip() → ToTensor()
-                #随机裁剪 → 固定数据上下界 → ？ → 随机水平翻转 → 随机垂直翻转 →
                 
             img = sample['image']
-            #img_s1 = sample2['image']
-            #img_s2 = sample3['image']
-            #label = sample1['label']
-
-            #print('img.shape = {} img_s1.shape = {} img_s2.shape = {} label.shape = {}'.format(img.shape, img_s1.shape, img_s2.shape, label.shape))
-            #都是 3 * 224 * 224
-            '''
-            slice = np.array(img[0:1, :, :].squeeze(dim = 0).cpu())
-            print('slice.shape = ', slice.shape)
-            name = './img/x/{}.png'.format(img_name.split('/')[-1:])
-            print('name = ', name)
-            slice = Image.fromarray((slice * 255).astype('float32')).convert('L')
-            slice.save(name)
-            '''
             #弱扰动（随机90°旋转+随机角度旋转）+强扰动（颜色扰动+灰度变化+高斯模糊）
-            
-            
             img_w = WeakDisturb(img)
             img_s1 = StrongDisturb(img_w)
             img_s2 = StrongDisturb(img_w)
-            
-            '''
-            img_w = img#WeakDisturb(img)
-            img_s1 = img_w
-            img_s2 = img_w
-            '''
-            
-            '''
-            slice = np.array(img[0:1, :, :].squeeze(dim = 0).cpu())
-            print('slice.shape = ', slice.shape)
-            name = './img/w/{}.png'.format(img_name.split('/')[-1:])
-            print('name = ', name)
-            slice = Image.fromarray((slice * 255).astype('float32')).convert('L')
-            slice.save(name)
-            '''
-            
-            #print('img_w.shape = {} label_w.shape = {}'.format(img.shape, label.shape)) #[3, 224, 224] [1, 224, 224]
-            #img_s1 = WeakDisturb(img_s1, label, idx)
-            #img_s1 = StrongDisturb(img, label, idx)
-            '''
-            slice = np.array(img_s1[0:1, :, :].squeeze(dim = 0).cpu())
-            print('slice.shape = ', slice.shape)
-            name = './img/s/{}.png'.format(img_name.split('/')[-1:])
-            print('name = ', name)
-            slice = Image.fromarray((slice * 255).astype('float32')).convert('L')
-            slice.save(name)
-            '''
-            
-            #print('img_s1.shape = {} label_s1.shape = {}'.format(img_s1.shape, label.shape)) #[3, 224, 224] [1, 224, 224]
-            #img_s2, label = WeakDisturb(img_s2, label, idx)
-            #img_s2, label = StrongDisturb(img, label, idx)
             
             sample = {'image': img_w, 'image_s1': img_s1, 'image_s2': img_s2} #未标注数据，只返回原始数据+原始强扰动数据*2
             
@@ -178,13 +95,6 @@ class PartialDataset(Dataset):
             img = sample['image']
             label = sample['label']
 
-            #弱扰动（随机90°旋转+随机角度旋转）
-            #img, label = WeakDisturb(img, label)
-            #强扰动（颜色扰动+灰度变化+高斯模糊）
-            #img, label = StrongDisturb(img, label)
-        t3 = time.time()
-        #print('Load time = ', t2 - t1)
-        #print('Trans time = ', t3 - t2)
         return sample
 
 
