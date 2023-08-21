@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Nov 22 14:10:33 2017
 
-@author: yanrpi
-"""
 import os
 import glob
 import numpy as np
@@ -79,7 +75,7 @@ class PartialDataset(Dataset):
                 sample = self.transform(sample)
                 
             img = sample['image']
-            #弱扰动（随机90°旋转+随机角度旋转）+强扰动（颜色扰动+灰度变化+高斯模糊）
+            #弱扰动+强扰动
             img_w = WeakDisturb(img)
             img_s1 = StrongDisturb(img_w)
             img_s2 = StrongDisturb(img_w)
@@ -98,61 +94,14 @@ class PartialDataset(Dataset):
         return sample
 
 
-def WeakDisturb(img):#, label, idx): #弱扰动（随机90°旋转+随机角度旋转）
+def WeakDisturb(img): #弱扰动
     #先转换成numpy.array格式
     img = np.array(img)#.cpu())
-    #label = np.array(label.cpu())
-    '''
-    print('W-start-img.shape = ', img.shape)
-    slice = np.array(img[0])
-    print('slice.shape = ', slice.shape)
-    name = './image_test/W-start/{}.png'.format(idx)
-    print('name = ', name)
-    slice = Image.fromarray((slice * 255).astype('float32')).convert('L')
-    slice.save(name)
-    '''
-    
     N = img.shape[0] #层数
     k = np.random.randint(0, 4) #旋转次数
-    angle = np.random.randint(-20, 20) #旋转角度
-    
     for i in range(N):
         img[i] = np.rot90(img[i], k) #图像随机90°旋转
-    '''
-    slice = np.array(img[0])
-    print('slice.shape = ', slice.shape)
-    name = './image_test/W-rot90/{}.png'.format(idx)
-    print('name = ', name)
-    slice = Image.fromarray((slice * 255).astype('float32')).convert('L')
-    slice.save(name)
-    '''
-    #img = ndimage.rotate(img, angle, order = 0, reshape = False) #图像随机角度旋转
-    '''
-    slice = np.array(img[0])
-    print('slice.shape = ', slice.shape)
-    name = './image_test/W-rotate/{}.png'.format(idx)
-    print('name = ', name)
-    slice = Image.fromarray((slice * 255).astype('float32')).convert('L')
-    slice.save(name)
-    '''
-    '''
-    label[0] = np.rot90(label[0], k) #标注随机90°旋转
-
-
-    #再转换回tensor格式
-    img = torch.tensor(img).cuda()
-    label = torch.tensor(label).cuda()
-    '''
-    
-    '''
-    slice = np.array(img[0:1, :, :].squeeze(dim = 0).cpu())
-    print('slice.shape = ', slice.shape)
-    name = './image_test/W-tensor/{}.png'.format(idx)
-    print('name = ', name)
-    slice = Image.fromarray((slice * 255).astype('float32')).convert('L')
-    slice.save(name)
-    '''
-    return img#, label
+    return img
 
 def blur(img, p = 0.5): #强扰动——模糊
     if random.random() < p:
@@ -160,117 +109,29 @@ def blur(img, p = 0.5): #强扰动——模糊
         img = img.filter(ImageFilter.GaussianBlur(radius = sigma))
     return img
 
-def StrongDisturb(img):#, label, idx): #强扰动（颜色扰动+灰度变化+高斯模糊）
+def StrongDisturb(img): #强扰动
     #先转换成numpy.array格式
     img = np.array(img)#.cpu())
-    #label = np.array(label.cpu())
-
     N = img.shape[0] #层数
     cache = [] #暂存经过强扰动处理后的img各层
-    '''
-    tmp = np.array(img[0])
-    print('slice.shape = ', tmp.shape)
-    name = './image_test/AA/{}-{}.png'.format(idx, 0)
-    print('name = ', name)
-    tmp = Image.fromarray((tmp * 255).astype('float32')).convert('L')
-    tmp.save(name)
-    '''
-    
     for i in range(N):
         slice = img[i] #取出当前层，并转换成PIL.Image格式
         slice = Image.fromarray((slice * 255.0).astype('float32')).convert('L')
-        '''
-        name = './image_test/BB/{}-{}.png'.format(idx, i)
-        print('name = ', name)
-        slice.save(name)
-        '''
-        
         #施加强扰动
         if random.random() < 0.8:
             slice = transforms.ColorJitter(0.5, 0.5, 0.5, 0.25)(slice)
-        '''    
-        name = './image_test/CC/{}-{}.png'.format(idx, i)
-        print('name = ', name)
-        slice.save(name)
-        '''
-        '''
-        tmp = np.array(slice)
-        print('slice.shape = ', tmp.shape)
-        name = './image_test/S-CJ/{}-{}.png'.format(idx, i)
-        print('name = ', name)
-        tmp = Image.fromarray((tmp * 255).astype('float32')).convert('L')
-        tmp.save(name)
-        '''
         slice = transforms.RandomGrayscale(p = 0.2)(slice)
-        '''
-        name = './image_test/DD/{}-{}.png'.format(idx, i)
-        print('name = ', name)
-        slice.save(name)
-        '''
-        '''
-        tmp = np.array(slice)
-        print('slice.shape = ', tmp.shape)
-        name = './image_test/S-RG/{}-{}.png'.format(idx, i)
-        print('name = ', name)
-        tmp = Image.fromarray((tmp * 255).astype('float32')).convert('L')
-        tmp.save(name)
-        '''
         slice = blur(slice)
-        '''
-        name = './image_test/EE/{}-{}.png'.format(idx, i)
-        print('name = ', name)
-        slice.save(name)
-        '''
-        '''
-        tmp = np.array(slice)
-        print('slice.shape = ', tmp.shape)
-        name = './image_test/S-Blur/{}-{}.png'.format(idx, i)
-        print('name = ', name)
-        tmp = Image.fromarray((tmp * 255).astype('float32')).convert('L')
-        tmp.save(name)
-        '''
         #放到cache中准备组合
         cache.append(np.array(slice) / 255.0)
     #将强扰动后的各层图片组合
     cache = np.array(cache)
     img = cache
-    '''
-    for i in range(N):
-        slice = np.array(img[i])
-        print('slice.shape = ', slice.shape)
-        name = './image_test/EE/{}-{}.png'.format(idx, i)
-        print('name = ', name)
-        slice = Image.fromarray((slice * 255).astype('float32')).convert('L')
-        slice.save(name)
-    '''
-    
-    '''
-    #取出标注，并转换成PIL.Image格式
-    slice = Image.fromarray(label[0].astype('float32')).convert('L')
-    #施加强扰动
-    
-    if random.random() < 0.8:
-        slice = transforms.ColorJitter(0.5, 0.5, 0.5, 0.25)(slice)
-    
-    slice = transforms.RandomGrayscale(p = 0.2)(slice)
-    slice = blur(slice)
-    #将强扰动后的标注导入原标注
-    label[0] = np.array(slice)
-    '''
     #再转换回tensor格式
     img = torch.tensor(img).cuda()
-    #label = torch.tensor(label).cuda()
-    return img#, label
+    return img
     
 class RandomCrop(object): #随机裁剪，选出其中标注非零的层数
-    """Crop randomly the image in a sample.
-    For segmentation training, only crop sections with non-zero label
-
-    Args:
-        output_size (tuple or int): Desired output size. If int, square crop
-            is made.
-    """
-
     def __init__(self, output_size, view, dataset):
         assert isinstance(output_size, (int, tuple)) #判断output_size是否为整型/元组
         if isinstance(output_size, int): #为整型时
@@ -282,11 +143,7 @@ class RandomCrop(object): #随机裁剪，选出其中标注非零的层数
         self.dataset = dataset
 
     def __call__(self, sample):
-        #t1 = time.time()
-        
         image, segmentation = sample['image'], sample['label'] #图像和标注
-        #print('RandomCrop img.type = {} segmentation.type = {}'.format(type(image), type(segmentation))) #numpy.memmap
-        
         if self.dataset != 2 and self.dataset != 2.5:
             h, w, d = image.shape
         else:
@@ -295,38 +152,14 @@ class RandomCrop(object): #随机裁剪，选出其中标注非零的层数
         new_h, new_w, new_d = self.output_size #数据新尺寸 长*宽*深
         view = self.view #图像扫描方向
         new_d_half = new_d >> 1 #新尺寸深度的一半
-
-        # Find slices containing segmentation object
-
+        
         img_data = image #图像
         seg_data = segmentation #标注
 
-        
-        '''
-        idx = random.randint(0, 100)
-        img = img_data.transpose((2, 1, 0))
-        C = img.shape[0]
-        for i in range(C):
-            slice = img[i]
-            #print('img[{}].shape = {}'.format(i, img.shape))
-            print('slice.shape = ', slice.shape)
-            name = './img/1/{}-{}.png'.format(idx, i)
-            print('name = ', name)
-            slice = Image.fromarray((slice * 255).astype('float32')).convert('L')
-            slice.save(name)
-        '''
-        '''
-        print('BEFORE seg.unique = ', np.unique(seg_data))
-        print('BEFORE seg.dtype = ', seg_data.dtype)
-        '''
         if self.dataset == 2 or self.dataset == 2.5:
             img_data = skimage.transform.resize(img_data, (256, 256, 256))
             seg_data = skimage.transform.resize(seg_data.astype(np.float64), (256, 256, 256)).astype(np.int64)
-        '''
-        print('AFTER seg.unique = ', np.unique(seg_data))
-        print('AFTER seg.dtype = ', seg_data.dtype)
-        print('RandomCrop img.shape = ', img_data.shape)
-        '''
+
         #根据图像扫描方向改变数据各维度的顺序        
         if view == 'axial':
             img_data = img_data
@@ -342,23 +175,12 @@ class RandomCrop(object): #随机裁剪，选出其中标注非零的层数
             lim = 50
             seg_start = max((d >> 1) - lim, 0) 
             seg_end = min((d >> 1) + lim, d - new_d) 
-            #print('U')
         else:
-            #print('L')
             if self.dataset == 2 or self.dataset == 2.5:
                 summed = np.sum(seg_data.sum(axis = 1), axis = 1) / self.dataset #依次对标注的前两维求和，得出标注的每层元素之和
             else:
                 summed = np.sum(seg_data.sum(axis = 0), axis = 0) / self.dataset #依次对标注的前两维求和，得出标注的每层元素之和
-
-            #img_summed = np.sum(img_data.sum(axis = 0), axis = 0)
-            
-            #print('img.max = {} seg.max = {}'.format(np.argmax(img_summed), np.argmax(summed)))
-
-            
-            #print(summed)
-            #print('summed_shape = ', summed.shape) #大小与标注的层数一致
-            #print('summed.max = {} summed.max->slice = {}'.format(np.max(summed), np.argmax(summed)))
-            
+                
             if self.dataset == 1:
                 threshold = 3000
             elif self.dataset == 2:
@@ -368,43 +190,24 @@ class RandomCrop(object): #随机裁剪，选出其中标注非零的层数
             
             non0_list = np.asarray([i for i in range(summed.size)])
             non0_list = non0_list[(summed > threshold)] #标注中层内元素之和大于阈值的层的编号，即非空的那些层
-            #print('non0_list = [{}, {}] all_slice = {}'.format(np.min(non0_list), np.max(non0_list), d))
-            #print('percent = {}'.format(len(non0_list) * 1.0 / (d * 1.0)))
             
             if len(non0_list) == 0:
                 lim = 50
                 seg_start = max((d >> 1) - lim, 0) 
                 seg_end = min((d >> 1) + lim, d - new_d)
-                #print('no')
             else:
                 #深度一维的下标的合法范围，保证后续作为标注的一层不会超出原深度的范围
                 seg_start = max(np.min(non0_list) - new_d_half, 0) 
                 seg_end = min(np.max(non0_list) + new_d_half, d - new_d) 
-                #print('yes')
             
-            '''
-            lim = 10
-            seg_start = max(np.argmax(summed) - lim, 0) 
-            seg_end = min(np.argmax(summed) + lim, d) 
-            '''
         if new_h == h: #新尺寸与原尺寸相同，前两维的起始下标从0开始
             top = 0
             left = 0
         else: #新尺寸与原尺寸不同时，前两维的起始下标在合法范围内随机选取
             top = np.random.randint(0, h - new_h)
             left = np.random.randint(0, w - new_w)
-        #print('seg_start = {} seg_end = {}'.format(seg_start, seg_end))
 
-
-        '''
-        if seg_start >= seg_end - new_d:
-            ant = min(np.argmax(summed), d - new_d)
-        else:
-            ant = np.random.randint(seg_start, seg_end - new_d) #深度一维的起始下标在合法且非零的标注层之间随机选取
-        '''
-        #print('[{}, {}]'.format(seg_start, seg_end - new_d))
         ant = np.random.randint(seg_start, seg_end - new_d) #深度一维的起始下标在合法且非零的标注层之间随机选取
-        #print('ant = {} ant + new_d = {} d = {}'.format(ant, ant + new_d, d))
         if self.dataset == 2 or self.dataset == 2.5:
             img_data = img_data[ant: ant + new_d,
                                 top: top + new_h, 
@@ -420,9 +223,7 @@ class RandomCrop(object): #随机裁剪，选出其中标注非零的层数
             #新标注尺寸 new_h * new_w * 1
             seg_data = seg_data.astype(np.float32) #转为numpy的float32类型
 
-
         else:
-                
             img_data = img_data[top: top + new_h, 
                                 left: left + new_w,
                                 ant: ant + new_d]
@@ -435,26 +236,11 @@ class RandomCrop(object): #随机裁剪，选出其中标注非零的层数
                                 ant_seg: ant_seg + 1]
             #新标注尺寸 new_h * new_w * 1
             seg_data = seg_data.astype(np.float32) #转为numpy的float32类型
-        '''
-        img = img_data.transpose((2, 1, 0))
-        print('img.shape = ', img.shape)
-        #img = torch.tensor(np.array(img).transpose((2, 1, 0))[0])
-        print('img.shape = ', img.shape)
-        slice = img[0]
-        print('slice.shape = ', slice.shape)
-        name = './img/2/{}.png'.format(idx)
-        print('name = ', name)
-        slice = Image.fromarray((slice * 255).astype('float32')).convert('L')
-        slice.save(name)
-        '''
-        # Merge labels
+        
         if self.dataset != 4:
             seg_data[seg_data > 1] = 1 #标签中所有大于1的部分全部固定为1 
         #导入BTCV数据集时不加上面一行
-        
-        #print('RandomCrop time = ', time.time() - t1)
 
-        #print('RandomCrop end img.shape = ', img_data.shape)
         return {'image': img_data, 'label': seg_data}
 
 
@@ -462,83 +248,50 @@ class RandomHorizontalFlip(object): #随机水平翻转
     """Randomly flip the image in the horizontal direction.
     """
     def __call__(self, sample):
-        #t1 = time.time()
         if random.uniform(0, 1) < 0.5: #随机生成的0到1的随机数小于0.5时，不做变换
             return sample
-        
-        # else return flipped sample
+
         image, label = sample['image'], sample['label']
-        #print('RandomHorizontalFlip img.type = {} segmentation.type = {}'.format(type(image), type(label)))
-        #print('RandomHF img.shape = ', image.shape)
+
         #将各行从上到下的顺序颠倒
         image = np.flip(image, axis = 0).copy()
         label = np.flip(label, axis = 0).copy()
-        #print('RandomHorizontalFlip time = ', time.time() - t1)
         return {'image': image, 'label': label}
 
 class RandomVerticalFlip(object): #随机垂直翻转
-    """Randomly flip the image in the horizontal direction.
-    """
     def __call__(self, sample):
-        #t1 = time.time()
         if random.uniform(0, 1) < 0.5: #随机生成的0到1的随机数小于0.5时，不做变换
             return sample
         
-        # else return flipped sample
         image, label = sample['image'], sample['label']
-        #print('RandomVerticalFlip img.type = {} segmentation.type = {}'.format(type(image), type(label)))
-        #print('RandomVF img.shape = ', image.shape)
         #将各列从左到右的顺序颠倒
         image = np.flip(image, axis = 1).copy()
         label = np.flip(label, axis = 1).copy()
-        #print('RandomVerticalFlip time = ', time.time() - t1)
         return {'image': image, 'label': label}
 
 class Clip(object): #固定数据上下界
-    """Clip the intensity values.
-
-    Args:
-        Lower and upper bounds.
-    """
-
     def __init__(self, lower_bound, upper_bound):
-        '''
-        '''
-        # Make sure upper bound is larger than the lower bound
         self.LB = min(lower_bound, upper_bound) #数据下界
         self.UB = max(lower_bound, upper_bound) #数据上界
 
     def __call__(self, sample):
-        #t1 = time.time()
         image, label = sample['image'], sample['label']
-        #print('Clip img.type = {} segmentation.type = {}'.format(type(image), type(label)))
-        #print('Clip img.shape = ', image.shape)
         image[image > self.UB] = self.UB #所有大于上界的部分固定为上界
         image[image < self.LB] = self.LB #所有小于下界的部分固定为下界
-        #print('Clip time = ', time.time() - t1)
         return {'image': image, 'label': label}
     
     
 class Normalize(object): #图像归一化
-    """Normalize the input data to 0 mean 1 std per channel"""
-    
     def __init__(self, lower_bound, upper_bound):
         self.LB = min(lower_bound, upper_bound) #数据下界
         self.UB = max(lower_bound, upper_bound) #数据上界
 
     def __call__(self, sample):
-        #t1 = time.time()
         image, label = sample['image'], sample['label']
-        #print('Normalize img.type = {} segmentation.type = {}'.format(type(image), type(label)))
-        #print('Normalize img.shape = ', image.shape)
         mid_point = (self.LB + self.UB) / 2.0 #上界和下界的均值
         image -= mid_point #图像减去该均值
         half_range = (self.UB - self.LB) / 2.0 #上界到下界范围的一半
         image /= (half_range + 0.000001) #图像除以该范围
-
-        #print('Normalize_image.shape = ', image.shape) 224 * 224 * 3
-        #print('Normalize_image.unique = ', np.unique(image)) [-1, 1]
-        #print('Normalize time = ', time.time() - t1)
         return {'image': image, 'label': label}
     
     
@@ -547,11 +300,7 @@ class ToTensor(object): #将np.array转换成tensor
     def __init__(self, dataset):
         self.dataset = dataset
     def __call__(self, sample):
-        #t1 = time.time()
         image, label = sample['image'], sample['label']
-        #print('ToTensor img.type = {} segmentation.type = {}'.format(type(image), type(label)))
-        #print('Tensor img.shape = ', image.shape)
-        # swap color axis because
         # numpy image: W x H x C
         # torch image: C X H X W
         
@@ -560,7 +309,7 @@ class ToTensor(object): #将np.array转换成tensor
         if self.dataset != 2 and self.dataset != 2.5:
             image = image.transpose((2, 1, 0))
             label = label.transpose((2, 1, 0))
-        #print('ToTensor time = ', time.time() - t1)
+
         #将array转换成tensor
         return {'image': torch.from_numpy(image),
                 'label': torch.from_numpy(label)}    
@@ -574,7 +323,5 @@ def get_composed_transform(hw, slices, view, dataset): #hw = 图片尺寸； sli
                                    RandomHorizontalFlip(), #随机水平翻转
                                    RandomVerticalFlip(), #随机竖直翻转
                                    ToTensor(dataset)]) #array转换成tensor
-    
-    #composed = transforms.Compose([RandomCrop((hw, hw, slices), view, dataset), ToTensor()]) #array转换成tensor
     return composed
     
