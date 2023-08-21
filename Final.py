@@ -1,12 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Dec 5 16:00:33 2017
-
-@author: yan
-"""
-
-# %% train the network
 import argparse
 import datetime
 import math
@@ -50,7 +43,6 @@ parser.add_argument('--view', default='axial', type=str,
                     metavar='View', help='view for segmentation (default: axial)') #图像扫描方向 axial = 横轴位 sagittal = 矢状位 coronal = 冠状位
 
 class AverageMeter(object): #用于输出平均值
-    """Computes and stores the average and current value"""
     def __init__(self):
         self.reset()
 
@@ -67,7 +59,6 @@ class AverageMeter(object): #用于输出平均值
         self.avg = self.sum / self.count #计算均值
  
 def calc(output, target): #计算某类别的Dice分数
-    """Computes the Dice similarity"""
     output = output.float() #预测结果   
     target = target.float() #标注 或 伪标签
 
@@ -89,7 +80,6 @@ def calc(output, target): #计算某类别的Dice分数
     return torch.mean(dice) #返回批次的Dice分数的均值
         
 def dice_similarity(output, target): #计算总的Dice分数
-    """Computes the Dice similarity"""
     total_dice = 0 #初始化总Dice分数
     
     output = output.clone() #预测结果
@@ -217,7 +207,7 @@ def unsup_train(labeled_loader, unlabeled_loader, data_type, model, criterion, o
         '''
         
         #各img都是[N = 8, 3, 224, 224]
-        #print('img_x.dtype = {} img_w.dtype = {} img_s1.dtype = {} img_s2.dtype = {}'.format(img_x.dtype, img_w.dtype, img_s1.dtype, img_s2.dtype))
+
         #计算mix数据的置信度和伪标签
         with torch.no_grad(): #内部数据不计算梯度，不参与反向传播
             model.eval() #将模型转化为评估模式
@@ -257,7 +247,6 @@ def unsup_train(labeled_loader, unlabeled_loader, data_type, model, criterion, o
         label_s2[cutmix_s2.unsqueeze(0).expand(label_w.shape) == 1] = label_w_mix[cutmix_s2.unsqueeze(0).expand(label_w.shape) == 1]
         #替换强扰动数据2的伪标签的混合区域为mix的伪标签的混合区域
         #print('label_w.shape = {} label_s1.shape = {}'.format(label_w.shape, label_s1.shape)) #[N = 8, 224, 224]
-        print('label_w.unique = {} label_s1.unique = {}'.format(torch.unique(label_w), torch.unique(label_s1))) 
         '''
         N = label_w.shape[0]
         for j in range(N):
@@ -426,8 +415,6 @@ def adjust_learning_rate(optimizer, gamma = 0.9): #调整学习率
         
 #保存模型参数checkpoint
 def save_checkpoint(state, is_best, log_folder, view = 'axial', filename = 'checkpoint.pth.tar'):
-    """Save checkpoints
-    """
     filename = path.join(log_folder, filename) #存放checkpoint文件的路径
     torch.save(state, filename) #保存模型参数
     if is_best: #如果是当前性能最佳模型，则拷贝一份作为当前最佳模型参数
