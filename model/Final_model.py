@@ -55,7 +55,7 @@ class ResUNet(nn.Module):
         w5 = w[:,4:5,:,:]
 
         fi_out = w1 * a + w2 * b + w3 * c + w4 * d + w5 * e
-        #softmax for uniseg
+ 
         fi_out = F.softmax(fi_out, dim = 1) 
         return fi_out
     
