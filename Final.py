@@ -16,33 +16,22 @@ from os import path
 import shutil
 import time
 
-from copy import deepcopy # A
-from torchvision import transforms # B
-from scipy import ndimage # C
-import random # D
-from PIL import Image # E
+from copy import deepcopy
+from torchvision import transforms
+from scipy import ndimage
+import random
+from PIL import Image
 
 import torch
 from torch import cuda
 from torch import optim
-#from torch.optim import lr_scheduler
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-#from collections import OrderedDict
 from torch.nn import init
 
 import dataset.Final_loader as dl
-# from model.denseu_net import DenseUNet
-# from model.unet import UNet
 from model.Final_model import ResUNet
-# from model.concave_res_w3 import ResUNet
-# from model.resu_net import ResUNet
-# from model.concave_dcc import ResUNet
-#from model.concave_sh import ResUNet
-# from scipy.misc import imsave
-
-# %%
 
 parser = argparse.ArgumentParser(description='PyTorch ResUNet Training')
 parser.add_argument('--epochs', default=2500, type=int, metavar='N',
@@ -56,11 +45,9 @@ parser.add_argument('-s', '--slices', default=3, type=int,
 parser.add_argument('--lr', '--learning-rate', default=0.0005, type=float,
                     metavar='LR', help='initial learning rate (default: 0.002)') #学习率
 parser.add_argument('--momentum', default=0.9, type=float,
-                    metavar='N', help='momentum for optimizer (default: 0.9)') #优化器参数更新所用的冲量
+                    metavar='N', help='momentum for optimizer (default: 0.9)') #优化器参数更新所用的动量
 parser.add_argument('--view', default='axial', type=str,
                     metavar='View', help='view for segmentation (default: axial)') #图像扫描方向 axial = 横轴位 sagittal = 矢状位 coronal = 冠状位
-parser.add_argument('--cv_n', default='1', type=str,
-                    help='Cross validation Dataset num') #交叉验证数据集个数（没用到）
 
 class AverageMeter(object): #用于输出平均值
     """Computes and stores the average and current value"""
@@ -81,10 +68,6 @@ class AverageMeter(object): #用于输出平均值
  
 def calc(output, target): #计算某类别的Dice分数
     """Computes the Dice similarity"""
-    #batch_size = target.size(0)
-
-    # max returns values and positions
-    # output = output>0.5
     output = output.float() #预测结果   
     target = target.float() #标注 或 伪标签
 
@@ -111,9 +94,7 @@ def dice_similarity(output, target): #计算总的Dice分数
     
     output = output.clone() #预测结果
     target = target.clone() #标注
-    #print('Dice:Output.unique = {}'.format(torch.unique(output)))
-    #print('Dice:target.unique = {}'.format(torch.unique(target)))
-    #print('Dice output.shape = {} target.shape = {}'.format(output.shape, target.shape))
+
     #output.shape = [3, 2, 224, 224] target.shape = [3, 224, 224]
     for i in range(1, output.shape[1]): #枚举所有类别（没有背景），计算对应类别的预测结果与标注的Dice分数
         target_i = torch.zeros(target.shape)
@@ -127,40 +108,7 @@ def dice_similarity(output, target): #计算总的Dice分数
         total_dice += dice_i #加到总Dice分数中
     total_dice = total_dice / (output.shape[1] - 1) #计算平均Dice分数，不包括背景所以分母要减1
 
-    return total_dice
-        
-def visualize_train_pred(d,name):
-    name = name
-    da = d.cpu().data.numpy()
-    db = np.transpose(da[0], (1,2,0))
-    # print('db.shape',db.shape)
-    if db.shape[2] == 3:
-        imsave(path.join('/home/fangx2/mu_or/train_u', name+'.png'), db, format='png')
-    else:
-        imsave(path.join('/home/fangx2/mu_or/train_u', name+'.png'), db[:,:,0], format='png')
-
-def visualize_train_label(d,name):
-    name = name
-    da = d.cpu().data.numpy()
-    db = da[0,:,:]
-    imsave(path.join('/home/fangx2/mu_or/train_u', name+'.png'), db, format='png')     
-
-def visualize_val_pred(d,name):
-    name = name
-    da = d.cpu().data.numpy()
-    db = np.transpose(da[0], (1,2,0))
-    # print('db.shape',db.shape)
-    if db.shape[2] == 3:
-        imsave(path.join('/home/fangx2/mu_or/val_u', name+'.png'), db, format='png')
-    else:
-        imsave(path.join('/home/fangx2/mu_or/val_u', name+'.png'), db[:,:,0], format='png')
-
-def visualize_val_label(d,name):
-    name = name
-    da = d.cpu().data.numpy()
-    db = da[0,:,:]
-    imsave(path.join('/home/fangx2/mu_or/val_u', name+'.png'), db, format='png')     
-    
+    return total_dice 
 
 def obtain_cutmix_box(img_size, size_min = 0.02, size_max = 0.4, ratio_1 = 0.3, ratio_2 = 1 / 0.3): #获取CutMix所用的混合区域
     mask = torch.zeros(img_size, img_size) #用于表明混合区域，初始化为和原图一样大的全零矩阵
@@ -185,7 +133,6 @@ def merge(pred, task): #合并预测结果
     C = pred.shape[1] #类别个数
     pred_p2 = pred[:,task:task+1,:,:].clone() #p2 = 所属数据集对应类别
     pred_p1 = pred[:,0:1,:,:].clone() 
-    #print('C = {} pred_p1.shape = {} pred_p2.shape = {}'.format(C, pred_p1.shape, pred_p2.shape))
     for i in range(1, C):
         pred_p1 += pred[:,i:i+1,:,:].clone()
     pred_p1 -= pred_p2 #p1 = 除p2外的所有预测结果之和
@@ -337,16 +284,6 @@ def unsup_train(labeled_loader, unlabeled_loader, data_type, model, criterion, o
             threshold = 0.8
         else:
             threshold = 0.9
-        '''
-        if epoch < 10:
-            threshold = 0.5
-        elif epoch < 50:
-            threshold = 0.7
-        elif epoch < 100:
-            threshold = 0.8
-        else:
-            threshold = 0.9
-        '''
         
         loss_x = criterion[0](torch.log(pred_x_p), label_x) #计算已标注数据的损失函数
         
@@ -369,12 +306,6 @@ def unsup_train(labeled_loader, unlabeled_loader, data_type, model, criterion, o
         
         total_loss.update(loss.data, img_x.size(0)) #更新累积的损失函数值与均值等等
 
-        # if epoch % 5 == 0:
-        #     visualize_train_pred(output_p[:,1:4,:,:], str(epoch) + 'output')
-        #     visualize_train_label(target_var[:,:,:], str(epoch) + 'target')
-        
-        # measure accuracy and record loss
-
         ds_x = dice_similarity(pred_x_p, label_x) #计算已标注图像预测结果的Dice分数
         
         ds_fp = dice_similarity(pred_fp_p, label_w) #计算特征级扰动预测结果的Dice分数
@@ -389,7 +320,6 @@ def unsup_train(labeled_loader, unlabeled_loader, data_type, model, criterion, o
         
         dice.update(ds_tr, img_x.size(0)) #更新累计的Dice分数与均值等等
         
-        # compute gradient and do SGD step
         optimizer.zero_grad() #初始化清零梯度
         loss.backward() #损失函数反向传播
         optimizer.step() #优化器更新参数
@@ -428,11 +358,6 @@ def validate(loader, data_type, model, criterion, epoch, verbose = True):
         label = Variable(sample_batched['label'][:, 0, :, :], volatile = True).long().cuda() #验证集标注 [8, 1, 224, 224] -> [8, 224, 224]
         #volatile = True表示反向传播时不会自动求导
 
-        #print('Val:input.shape = {}'.format(input_var.shape)) # [N = 8/3, 3, 224, 224]
-        #print('Val:input.dtype = {}'.format(input_var.dtype)) #torch.float32
-        
-        #print('Val:target.shape = {}'.format(target_var.shape)) # [N = 8/3, 224, 224]
-        #print('Val:target.dtype = {}'.format(target_var.dtype)) #torch.int64
         '''
         N = label.shape[0]
         for j in range(N):
@@ -466,15 +391,10 @@ def validate(loader, data_type, model, criterion, epoch, verbose = True):
             pred_p[:, 0, :, :] -= pred[:, data_type, :, :].clone() #将非数据集对应类别的预测结果相加，作为0对应的背景的预测结果
 
         pred_p = pred_p.clamp_min_(1e-10)
-        # if epoch % 5 == 0:
-        #     visualize_val_pred(output_p[:,1:4,:,:], str(epoch) + 'output')
-        #     visualize_val_label(target_var[:,:,:], str(epoch) + 'target')
     
         loss = criterion[0](torch.log(pred_p), label) #计算验证集损失函数值
         losses.update(loss.data, img.size(0)) #更新累积的损失函数值与均值等等
 
-        #print('Val:output.unique = {}'.format(torch.unique(output_p)))
-        #print('Val:target.unique = {}'.format(torch.unique(target_var)))
         ds = dice_similarity(pred_p, label) #计算验证集的Dice分数
         dice.update(ds.data, img.size(0)) #更新累计的Dice分数与均值等等
 
@@ -529,15 +449,10 @@ if __name__ == "__main__":
     if not path.isdir(log_dir):
         os.makedirs(log_dir)
 
-    """
-    training
-    """
     num_classes = 4 #数据类别的个数
     num_in_channels = args.slices #选取的合法且标注非零的数据层数
 
-    # model = DenseUNet(num_channels = num_in_channels, num_classes = num_classes)
     model = ResUNet(num_in_channels, num_classes) #模型
-    # model = UNet(num_in_channels, num_classes)
     '''
     resunet_checkpoint = torch.load('./ckp-LiTS/resu_best_axial.pth.tar')
     resunet_dict = resunet_checkpoint['state_dict']
@@ -567,7 +482,6 @@ if __name__ == "__main__":
     folder_validation_4 = './data/BTCV/validation' #验证集路径
 
     weights = torch.Tensor([0.2, 1.2])
-    #print('weights.shape = ', weights.shape)
     criterion_l = nn.NLLLoss2d(weight = weights)#计算监督损失和验证集损失时使用
     criterion_u = nn.NLLLoss2d(reduction = 'none', weight = weights) #计算半监督损失时使用，不取平均，直接以矩阵形式输出
     criterion = [criterion_l, criterion_u] #损失函数
@@ -661,23 +575,11 @@ if __name__ == "__main__":
             unsup_train_loss = unsup_train(labeled_loader2, unlabeled_loader2, 2, model, criterion, optimizer, epoch, verbose = True)
         elif epoch % 3 == 2:
             unsup_train_loss = unsup_train(labeled_loader3, unlabeled_loader3, 3, model, criterion, optimizer, epoch, verbose = True)
-        
-        '''
-        if epoch % 2 == 0:
-            unsup_train_loss = unsup_train(labeled_loader1, unlabeled_loader1, 1, model, criterion, optimizer, epoch, verbose = True)
-        elif epoch % 2 == 1:
-            unsup_train_loss = unsup_train(labeled_loader3, unlabeled_loader3, 2, model, criterion, optimizer, epoch, verbose = True)
-        '''
-        #unsup_train_loss = unsup_train(labeled_loader2, unlabeled_loader2, 1, model, criterion, optimizer, epoch, verbose = True)
-        #unsup_train_loss = unsup_train(labeled_loader3, unlabeled_loader3, 1, model, criterion, optimizer, epoch, verbose = True)
-        #unsup_train_loss = unsup_train(labeled_loader1, unlabeled_loader1, 1, model, criterion, optimizer, epoch, verbose = True)
+      
         train_history.append(unsup_train_loss) #保存本次训练的损失函数值
         
-        # Gradually reducing learning rate
         if epoch % 40 == 0: #每训练40轮更新学习率
             adjust_learning_rate(optimizer, gamma=0.99)
-        
-        # evaluate on validation set
         
         #验证
         if epoch % 3 == 0:
@@ -687,28 +589,12 @@ if __name__ == "__main__":
         elif epoch % 3 == 2:
             val_loss = validate(val_loader3, 3, model, criterion, epoch, verbose = True)
         
-
-        '''
-        #验证
-        if epoch % 2 == 0:
-            val_loss = validate(val_loader1, 1, model, criterion, epoch, verbose = True)
-        elif epoch % 2 == 1:
-            val_loss = validate(val_loader3, 2, model, criterion, epoch, verbose = True)
-        '''
-
-
-        
-        #val_loss = validate(val_loader2, 1, model, criterion, epoch, verbose = True)
-        #val_loss = validate(val_loader3, 1, model, criterion, epoch, verbose = True)
-        #val_loss = validate(val_loader1, 1, model, criterion, epoch, verbose = True)
-        
         val_history.append(val_loss) #保存本次验证的损失函数值
 
         elapsed_time = time.time() - t_start #训练 + 验证结束时间
         print('Epoch {} completed in {:.2f}s\n'.format(epoch + 1, elapsed_time)) #输出本轮训练 + 验证用时
 
         dice = val_loss[1] #本次验证的Dice分数
-        # remember best prec@1 and save checkpoint
         is_best = dice > best_dice #判断是否为最佳Dice分数
         best_dice = max(dice, best_dice) #更新最佳Dice分数
 
