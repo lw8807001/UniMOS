@@ -51,19 +51,19 @@ class PartialDataset(Dataset):
             if 'unlabeled' in img_name: #未标注数据
                 seg_name = img_name
             elif 'validation' in img_name: #验证集
-                seg_name = img_name.replace('new_validation', 'label_2') 
+                seg_name = img_name.replace('new_validation', 'label') 
                 seg_name = seg_name.replace('scan', 'label')
             else: #标注数据
-                seg_name = img_name.replace('new_labeled', 'label_2') 
+                seg_name = img_name.replace('new_labeled', 'label') 
                 seg_name = seg_name.replace('scan', 'label')    
                 
         elif 'Spleen' in img_name:
             if 'unlabeled' in img_name: #未标注数据
                 seg_name = img_name
             elif 'validation' in img_name: #验证集
-                seg_name = img_name.replace('validation', 'label_3')
+                seg_name = img_name.replace('validation', 'label')
             else: #标注数据
-                seg_name = img_name.replace('labeled', 'label_3')
+                seg_name = img_name.replace('labeled', 'label')
                 
         image = nib.load(img_name).get_data() #读入图像数据
         segmentation = nib.load(seg_name).get_data() #读入标注数据
