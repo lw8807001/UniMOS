@@ -7,9 +7,13 @@ The annotation of medical images is very important especially in training machin
 In this paper, we present UniMOS, the first universal framework for achieving the utilization of fully and partially labeled images as well as unlabeled images. Specifically, we construct a Multi-Organ Segmentation (MOS) module over fully/partially labeled data as the basenet, where multi-view multi-scale contextual features are extracted to enhance representation and a new target adaptive loss is designed for MOS. Furthermore, we incorporate a semi-supervised training module over unlabeled data. This module effectively combines consistent regularization and pseudo-labeling techniques, leveraging both image-level and feature-level interference to notably enhance the segmentation of unlabeled data. 
 
 ## Environment
-- set up your environment by anaconda, (python3.7, torch 1.3.0)
-- xxx
+We set up environment by Anaconda.
+- python 3.7, torch 1.3.0
+- conda install -c simpleitk simpleitk
+- conda install -c conda-forge nibabel
 - pip install torchvision=0.4
+- pip install pillow
+- pip install scikit-image
 
 ## Dataset
 All datasets we used in the training and validation of UniMOS can be downloaded from links below: 
@@ -30,7 +34,7 @@ After datas are downloaded, please store them in corresponding folders as follow
    └─...
 ```
 ## Preprocessing
-Please use `resample.py` to resize the images and labels into n\*256\* 256 by:
+Please use `resample.py` to resize the images and labels into n\*256\*256 by:
 ```
 resample -p1 './data/raw_LiTS/' -p2 './data/LiTS/' -s1 256 -s2 256
 ```
