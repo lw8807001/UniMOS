@@ -23,14 +23,14 @@ After datas are downloaded, please store them in corresponding folders as follow
 │  ├─label            //labels of labeled data and validation data
 │  ├─labeled          //labeled data in training set 
 │  ├─unlabeled        //unlabeled data in training set
-│  └─validation       //data in validation set
+│  └─validation       //validation data in validation set
 ├─KiTS
 │  └─...
 └─MSDSpleen
    └─...
 ```
 ## Preprocessing
-Please use resample.py to resize the images and labels into n * 256 * 256 by:
+Please use `resample.py` to resize the images and labels into n\*256\* 256 by:
 ```
 resample -p1 './data/raw_LiTS/' -p2 './data/LiTS/' -s1 256 -s2 256
 ```
@@ -38,7 +38,6 @@ resample -p1 './data/raw_LiTS/' -p2 './data/LiTS/' -s1 256 -s2 256
 ## Usage
 You can train and validate UniMOS on JupyterLab as:
 ```
-sbatch Final.py -ep = xxx
+sbatch Final.sh
 ```
-
-
+The parameters in `Final.sh` are defined in `Final.py` and can be modified by yourself.
