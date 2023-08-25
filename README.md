@@ -18,8 +18,17 @@ All datasets we used in the training and validation of UniMOS can be downloaded 
 - MSDSpleen: https://aistudio.baidu.com/datasetdetail/23918
 
 After datas are downloaded, please store them in corresponding folders as follows:
-xxx
-
+```
+├─LiTS
+│  ├─label            //labels of labeled data and validation data
+│  ├─labeled          //labeled data in training set 
+│  ├─unlabeled        //unlabeled data in training set
+│  └─validation       //data in validation set
+├─KiTS
+│  └─...
+└─MSDSpleen
+   └─...
+```
 ## Preprocessing
 Please use resample.py to resize the images and labels into n * 256 * 256 by:
 ```
