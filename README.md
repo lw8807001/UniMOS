@@ -34,7 +34,7 @@ After datas are downloaded, please store them in corresponding folders as follow
    └─...
 ```
 ## Preprocessing
-Please use `resample.py` to resize the images and labels into n\*256\*256 by:
+Please use `resample.py` to resize the images and labels into `n\*256\*256` by:
 ```
 resample -p1 './data/raw_LiTS/' -p2 './data/LiTS/' -s1 256 -s2 256
 ```
