@@ -13,23 +13,23 @@ In this paper, we present UniMOS, the first universal framework for achieving th
 
 ## Dataset
 All datasets we used in the training and validation of UniMOS can be downloaded from links below: 
-LiTS: https://aistudio.baidu.com/datasetdetail/10273
-KiTS: https://aistudio.baidu.com/datasetdetail/24582
-MSDSpleen: https://aistudio.baidu.com/datasetdetail/23918
+- LiTS: https://aistudio.baidu.com/datasetdetail/10273
+- KiTS: https://aistudio.baidu.com/datasetdetail/24582
+- MSDSpleen: https://aistudio.baidu.com/datasetdetail/23918
 
 After datas are downloaded, please store them in corresponding folders as follows:
 xxx
 
 ## Preprocessing
-Please use resample.py to resize the images and labels into $n*256*256$ by:
-'''
+Please use resample.py to resize the images and labels into n*256*256 by:
+```
 resample -p1 './data/raw_LiTS/' -p2 './data/LiTS/' -s1 256 -s2 256
-'''
+```
 
 ## Usage
 You can train and validate UniMOS on JupyterLab as:
-'''
+```
 sbatch Final.py -ep = xxx
-'''
+```
 
 
